@@ -1,6 +1,12 @@
+# De LaTeX
 *.aux
 *.fdb_latexmk
 *.fls
-*.log
 *.synctex.gz
 *.toc
+
+# De Python
+**/__pycache__
+
+# General
+*.log
