@@ -79,7 +79,7 @@
 
             Dado el grupo de relaciones $R_A$ y un grafo vacío $G$ se crea un vertice por cada miembro $m_i$ presente en $R_A$. Por cada relación $(m_i, m_j)$ se crea una arista dirigida $m_i \rightarrow m_j$ de tal forma que $i<j$, con capacidad $r_{ij}$. La restricción ``$i<j$'' genera que $p_1$ funcione como fuente (nodo $s$, del inglés \textit{source}) y que $p_2$ funcione como sumidero de la red (nodo $t$, \textit{terminal}), y que las aristas fluyan en el sentido $s \rightarrow t$.
 
-             \begin{figure}[h]
+             \begin{figure}[ht]
                 \centering
                 \includegraphics[width=0.8\textwidth]{imagenes/red-relacion.png}
                 \caption{Ejemplo de red de flujo de relaciones}\label{red-relaciones}
@@ -89,7 +89,7 @@
 
             Para lograrlo, en un primer paso de solución se calcula el flujo máximo de la red a través del Algoritmo de Edmonds-Karp. Por teorema fundamental de flujo se conoce que el valor de flujo máximo es igual a la capacidad de corte mínimo, donde el corte mínimo $(S, T)$ es una partición de los nodos tal que $s \in S$ y $t \in T$. Estos subconjuntos $S$ y $T$ contienen aquellos nodos tal que en $S$ se encuentran todos los nodos \textit{alcanzables} por $s$ en el grafo residual, es decir todos los nodos a los que se pueden llegar usando aristas de capacidad diferente de 0, y en T se encuentran los nodos que cumplen $T=G-\{S\}$.
 
-            \begin{figure}[h]
+            \begin{figure}[ht]
                 \centering
                 \includegraphics[width=0.8\textwidth]{imagenes/mincut.png}
                 \caption{Corte mínimo de la red de relaciones}\label{mincut}
@@ -157,7 +157,25 @@ function FlujoMaximo(Grafo G, fuente s, sumidero t):
 
         \subsubsection{Análisis de la solución}
 
+            A partir del pseudocódigo presentado anterior se puede realizar un análisis en profundidad de la solución propuesta, comenzando por un análisis de uso de recursos de tiempo y espacio, para luego terminar de definir detalles que pueden haber quedado sin analizar.
 
+            \textbf{Análisis de eficiencia espacial:} En cuestiones de uso de espacio, este algoritmo ocupa distintos ordenes de complejidad según como se implemente el grafo a utilizarse. En caso de usar una lista de adyacencia, la complejidad espacial de guardar el grafo de relaciones conllevaría $O(V+E)$, mientras que una matriz de adyacencias utiliza $O(V^2)$. Dado que en este trabajo se implementaron las soluciones algorítmicas en el lenguaje de programación Python, se utilizó la lista de adyacencias\footnote{En este caso sería más adecuado decir ``Diccionario de adyacencias''.} y por lo tanto, en consecuencia a este hecho, la complejidad espacial del algoritmo será igual a $O(V+E)$. Cabe aclararse adicionalmente, que la operatoria de busqueda de flujo máximo requiere $O(V)$ espacio adicional, que por sumarse a la complejidad mencionada anteriormente no afecta al requerimiento espacial final ya que $O(V) \subset O(V+E)$.
+            
+            \textbf{Análisis de eficiencia temporal:} Respecto al tiempo de ejecución del algoritmo, construir la red de relaciones lleva $O(V+E)$ en ordenes de tiempo e identificar los distintos subconjuntos tambien requieren $O(V+E)$. Dado que se eligió el algoritmo de Edmonds-Karp, este tiene una complejidad de $O(V+E^{2})$ dado que iterando por cada arista ($O(E)$) se busca un camino de aumento ($O(V+E)$) lo que resulta en la complejidad dada. Adicionalmente, contabilizar cuantos miembros contienen cada subconjuntos puede conllevar como mucho una complejidad de $O(V)$. 
+            
+            Ya que $O(V) \subset O(V+E)$ y $ O(V+E) \subset O(V+E^{2})$, la complejidad resulta:
+            \begin{equation}
+                \centering 
+                2O(V+E)+O(V+E^{2})+O(V)=O(V+E^{2})
+            \end{equation}
+            
+            \textbf{Otros detalles de la solución:} En esta subsección del análisis de la propuesta algorítmica se busca responder a las preguntas ``\textit{¿Realmente la propuesta predicirá la división final?}'' y ``\textit{¿Puede una misma instancia tener diferentes soluciones? ¿Que implicación tiene elegir una solución por encima de otra?}''.
+            
+            Respecto a la primer pregunta, esta solución no predicirá la división final entre los miembros, sino que esta solución presenta un modelo de estimación simplificada. Esto está dado porque el corte mínimo asume que el sistema busca el estado de menor fricción, es decir la separación del grupo de miembros del dojo que mantenga los vinculos más fuertes. Adicionalmente, dado que es un modelo estimativo, puede ocurrir en la realidad que por fuera de toda estimación dada por esta solución, un alumno elija irse con un profesor en vez del estimado. Esta variación además podría generar un efecto cascada de cambio de profesor de alumnos de relación fuerte con el miembro que eligió al otro profesor.
+
+
+
+        \subsubsection{Ejemplo gráfico de ejecución de la solución}
 
 \subsection{El despacho de los productos}
 
