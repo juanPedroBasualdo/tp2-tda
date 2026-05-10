@@ -132,7 +132,7 @@ function definirNuevoRepresentante(miembros V, relaciones R, profesores P1, P2):
         return "Ambos profesores se dividen la misma cantidad de alumnos";
             \end{lstlisting}
 
-            Donde la función \texttt{FlujoMaximo()} está determinada por el siguiente Pseudocódigo: \newpage
+            Donde la función \texttt{FlujoMaximo} está determinada por el siguiente Pseudocódigo: \newpage
 
             \begin{lstlisting}[style=pseudo,caption={Pseudocódigo de FlujoMaximo}]
 function FlujoMaximo(Grafo G, fuente s, sumidero t):
@@ -173,9 +173,57 @@ function FlujoMaximo(Grafo G, fuente s, sumidero t):
             
             Respecto a la primer pregunta, esta solución no predicirá la división final entre los miembros, sino que esta solución presenta un modelo de estimación simplificada. Esto está dado porque el corte mínimo asume que el sistema busca el estado de menor fricción, es decir la separación del grupo de miembros del dojo que mantenga los vinculos más fuertes. Adicionalmente, dado que es un modelo estimativo, puede ocurrir en la realidad que por fuera de toda estimación dada por esta solución, un alumno elija irse con un profesor en vez del estimado. Esta variación además podría generar un efecto cascada de cambio de profesor de alumnos de relación fuerte con el miembro que eligió al otro profesor.
 
+            Otra característica de esta solución es el hecho de que pueden haber múltiples ópciones de corte en una misma instancia. En una red de flujo, el flujo máximo toma un único valor, pero el corte mínimo de capacidades de dicha red no tiene porque ser uno solo. Tomando el caso donde hay un solo miembro además de ambos profesores y que dicho miembro interactuó una misma cantidad de veces con ambos profesores, ocurre el caso donde la red de flujo tendrá un flujo máximo igual al número de veces que haya interactuado el alumno con los profesores pero el corte que minimiza las capacidades puede realizarse desde la fuente o desde el sumidero, por lo que dará distintas soluciones según como se haya determinado la operación de corte.
 
+            \begin{figure} [ht]
+                \centering
+                \includegraphics[width=0.8\textwidth]{imagenes/edge-1.png}\label{edge-1}
+                \caption{Caso borde donde se pone en duda donde se realizará el corte mínimo}
+            \end{figure}
+
+            Este problema de incertidumbre es equivalente para cualquier cantidad de miembros, siempre que se cumpla que ambos profesores hayan interactuado la misma cantidad de veces con ellos y no hayan interacciones entre miembros. Consecuentemente, si bien el Teorema de Flujo Máximo-Corte Mínimo ofrece una solución óptima en términos de capacidad, la existencia de múltiples cortes mínimos sugiere que ciertos miembros se encuentran en una posición de equilibrio social. La elección de la fuente ($s_1$) para iniciar la exploración del grafo residual inclina la asignación de estos miembros en disputa hacia el primer profesor.
 
         \subsubsection{Ejemplo gráfico de ejecución de la solución}
+
+            En esta sección se mostrará la solución de una instancia del problema según el algoritmo mostrado anteriormente. Dada la instancia siguiente instancia: 
+            
+            $[([1,2],4),([1,3],4),([1,5],1),([2,5],1),([5,7],5),([3,4],4),([5,6],5),$
+            
+            $([6,7],5)]$
+            
+            Con el profesor 1 representado por el número 1 y el profesor 2 representado por el número 7. Se construye una red de flujo a partir de ella, donde los nodos fuente y sumidero son el profesor 1 y el profesor 2 respectivamente, los nodos intermedios son los miembros del dojo y las aristas dirigidas y ponderadas son las veces que interactuaron dos miembros. La instancia elegida para este ejemplo conforma la red mostrada en la Figura 4.
+
+            \begin{figure} [ht]
+                \centering
+                \includegraphics[width=0.8\textwidth]{imagenes/ej-1.png}\label{ej1}
+                \caption{Red conformada por la instancia dada.}                
+            \end{figure}
+
+            A partir de esta red, se busca el corte que minimice las capacidades de las aristas. Como se muestra en la Figura 5, el corte mínimo logra separar la red en dos partes. 
+
+            \begin{figure} [ht]
+                \centering
+                \includegraphics[width=0.8\textwidth]{imagenes/ej-1-cut.png}\label{ej1-cut}
+                \caption{Corte mínimo de la instancia.}                
+            \end{figure}
+            
+            Es así como a partir del grafo residual de la red pueden conformarse dos grupos de miembros y estos siempre tendrán la máxima relación entre sus pares. Así que tomando el grafo residual de la red se buscan todos los nodos ``alcanzables'' por el profesor 1 y se conforma el primero de los grupos.
+
+            \begin{figure} [ht]
+                \centering
+                \includegraphics[width=0.8\textwidth]{imagenes/ej-1-residual.png}\label{ej1-residual}
+                \caption{Grafo residual de la red de flujos de la instancia.}
+            \end{figure}
+
+            Por último, usando el grupo recientemente formado se buscan aquellos miembros que no conformen dicho grupo para encontrar el grupo de miembros que seleccionarían al profesor 2. Así formando los dos grupos solución del algoritmo tal como se muestra en la figura 7.
+
+            \begin{figure}
+                \centering
+                \includegraphics[width=0.8\textwidth]{imagenes/ej-1-groupings.png}\label{ej1-groupings}
+                \caption{Grupos solución a la instancia.}
+            \end{figure}
+            
+            
 
 \subsection{El despacho de los productos}
 
@@ -185,11 +233,11 @@ function FlujoMaximo(Grafo G, fuente s, sumidero t):
 
 \section{Conclusión}
 
-A partir de este trabajo de investigación y de la puesta en práctica de los conocimientos obtenidos en esta etapa avanzada de la Teoría de Algoritmos, se ha logrado profundizar en el análisis de problemas de optimización de alta complejidad. El estudio de las Redes de Flujo permitió comprender la modelización de sistemas con restricciones de capacidad, mientras que el abordaje de la Fuerza Bruta y las Clases de Complejidad brindó una perspectiva integral sobre los límites de la eficiencia computacional y la distinción entre problemas tratables e intratables.
+    A partir de este trabajo de investigación y de la puesta en práctica de los conocimientos obtenidos en esta etapa avanzada de la Teoría de Algoritmos, se ha logrado profundizar en el análisis de problemas de optimización de alta complejidad. El estudio de las Redes de Flujo permitió comprender la modelización de sistemas con restricciones de capacidad, mientras que el abordaje de la Fuerza Bruta y las Clases de Complejidad brindó una perspectiva integral sobre los límites de la eficiencia computacional y la distinción entre problemas tratables e intratables.
 
-Asimismo, se enriqueció la labor realizada mediante una investigación exhaustiva que integró tanto el material bibliográfico de la cátedra como el análisis de publicaciones técnicas y recursos académicos complementarios. Esta base teórica fue fundamental para entender no solo el funcionamiento de los algoritmos, sino también las implicancias de las reducciones entre problemas y la jerarquía de complejidad que rige a la informática moderna.
+    Asimismo, se enriqueció la labor realizada mediante una investigación exhaustiva que integró tanto el material bibliográfico de la cátedra como el análisis de publicaciones técnicas y recursos académicos complementarios. Esta base teórica fue fundamental para entender no solo el funcionamiento de los algoritmos, sino también las implicancias de las reducciones entre problemas y la jerarquía de complejidad que rige a la informática moderna.
 
-Finalmente, la implementación en el lenguaje Python de las soluciones propuestas para redes de flujo y algoritmos de búsqueda exhaustiva resultó clave para validar los modelos teóricos. Este proceso permitió observar el comportamiento real de los algoritmos frente a diferentes volúmenes de datos y casos de prueba, consolidando la transición entre el diseño conceptual y la aplicación práctica de soluciones óptimas en entornos de ingeniería.
+    Finalmente, la implementación en el lenguaje Python de las soluciones propuestas para redes de flujo y algoritmos de búsqueda exhaustiva resultó clave para validar los modelos teóricos. Este proceso permitió observar el comportamiento real de los algoritmos frente a diferentes volúmenes de datos y casos de prueba, consolidando la transición entre el diseño conceptual y la aplicación práctica de soluciones óptimas en entornos de ingeniería.
 
 \section{Referencias}
 
