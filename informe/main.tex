@@ -5,6 +5,7 @@
 \usepackage[spanish]{babel}
 \usepackage{xcolor}
 \usepackage{listings}
+\usepackage{fancyvrb}
 
 
 \definecolor{comment}{RGB}{127, 127, 127}
@@ -222,12 +223,192 @@ function FlujoMaximo(Grafo G, fuente s, sumidero t):
                 \includegraphics[width=0.8\textwidth]{imagenes/ej-1-groupings.png}\label{ej1-groupings}
                 \caption{Grupos solución a la instancia.}
             \end{figure}
-            
-            
+            \newpage 
 
-\subsection{El despacho de los productos}
+    \subsection{El despacho de los productos}
 
-\subsubsection{Explicación del problema}
+        En muchos problemas de logística y optimización de recursos no solo importa maximizar una ganancia, sino también minimizar las pérdidas asociadas al desperdicio de capacidad o recursos no utilizados. Este tipo de situaciones aparece frecuentemente en problemas de empaquetado, transporte y asignación de tareas, donde encontrar una solución óptima requiere analizar múltiples configuraciones posibles.
+
+        En esta sección se resolverá un problema de optimización mediante la técnica de \textit{Branch \& Bound}. Esta técnica puede entenderse como una mejora sobre la búsqueda exhaustiva tradicional, ya que mantiene la optimalidad de fuerza bruta, pero reduce considerablemente la cantidad de soluciones analizadas gracias al uso de podas. 
+
+        \subsubsection{Explicación del problema}
+
+            Se tiene un conjunto de productos donde cada producto \(i\) está representado por la tupla \((s_i, v_i)\), donde \(s_i\) representa el tamaño del producto y \(v_i\) el valor obtenido por enviarlo. Además, se tiene \(k\) contenedores iguales, cada uno con capacidad máxima \(C\), y un factor de penalización \(a\) aplicado sobre el espacio libre de los contenedores que hayan sido utilizados. Cada producto puede colocarse en un único contenedor o no enviarse. A su vez, la suma de los tamaños de los productos que se encuentran dentro de un mismo contenedor no puede superar su capacidad máxima.
+
+            El objetivo consiste en maximizar la ganancia total obtenida por el envío de productos, teniendo en cuenta además la penalización por espacio desaprovechado. Esto esta dado por:
+
+            \[
+            G = \sum v_i - a \cdot \sum espacio\_libre
+            \]
+
+        \subsubsection{Búsqueda exhaustiva sin poda}
+
+            Una solución al problema consiste en realizar una búsqueda exhaustiva de todas las configuraciones posibles. Para cada producto existen \(k+1\) decisiones posibles, ya que este puede colocarse en cualquiera de los \(k\) contenedores disponibles o directamente no enviarse. Por lo tanto, si existen \(n\) productos, el número total de combinaciones posibles que podrían generarse es:
+
+            \[
+            (k+1)^n
+            \]
+
+            Esta manera garantiza encontrar la solución óptima ya que analiza todas las combinaciones válidas posibles. Sin embargo, es ineficiente debido a que incluso las ramas que claramente no superan la mejor solución encontrada continúan explorándose hasta el final. Para evitar este problema, se agrega una función límite que permite estimar si una rama todavía tiene posibilidades de mejorar la solución óptima actual y, en caso contrario, descartarla antes de recorrerla completamente.
+
+        \subsubsection{Propuesta}
+
+            Se propone construir un árbol de decisiones donde cada nivel representa un producto distinto. Para cada producto \(i\) se generan hasta \(k+1\) ramas posibles, correspondientes a colocarlo en alguno de los \(k\) contenedores disponibles o directamente no enviarlo. De esta manera, cada nodo del árbol mantiene el estado parcial de la solución construida hasta el momento.
+
+            Durante el recorrido del árbol, el algoritmo calcula una estimación del máximo beneficio que todavía podría alcanzarse usando los productos restantes. Si esta no supera la mejor solución encontrada hasta el momento, entonces la rama actual se poda y deja de explorarse, evitando así recorrer nodos que no conducen a una solución óptima.
+
+        \subsubsection{Explicación del funcionamiento}
+
+            El algoritmo analiza los productos uno por uno y, para cada uno de ellos, intenta colocarlo en todos los contenedores donde exista espacio suficiente. Despues de cada asignación posible, se actualiza la ganancia parcial obtenida y se calcula la función límite de la nueva rama generada. La exploración continúa solamente si la rama todavía tiene posibilidades de superar la mejor solución encontrada hasta ese momento. Además, también se considera la posibilidad de no enviar el producto actual, generando así otra rama dentro del árbol de búsqueda.
+
+            Cuando se alcanza una hoja del árbol, es decir, cuando ya se tomaron decisiones para todos los productos, se calcula la penalización total asociada al espacio libre de los contenedores utilizados y se obtiene la ganancia final de la configuración construida. Finalmente, si esta ganancia resulta mayor que la mejor solución conocida, la solución se actualiza.
+
+        \subsubsection{Función costo}
+
+            Representa la ganancia obtenida para un estado dado.
+
+            \[
+            G = \sum v_i - a \cdot \sum (C - U_j)
+            \]
+
+            Donde $U_j$ es el espacio utilizado en el contenedor ``\textit{j}''
+
+        \subsubsection{Función límite}
+
+            Permite estimar el máximo beneficio posible que podría alcanzarse.
+
+
+            \[
+            cota\_superior = ganancia\_actual + \sum valores\_restantes
+            \]
+
+            Esta función representa una estimación optimista, ya que considera que todos los productos restantes podrían agregarse sin restricciones de capacidad.
+
+
+            \[
+            cota\_superior \leq mejor\_solucion
+            \]
+
+        \subsubsection{Complejidades}
+
+            Para cada producto existen \(k+1\) decisiones posibles, por lo tanto, en el peor caso, el algoritmo puede recorrer:
+
+            \[
+            (k+1)^n
+            \]
+
+            Dando una complejidad temporal:
+
+            \[
+            T(n)=O((k+1)^n)
+            \]
+
+
+            Teniendo en cuenta que la profundidad máxima del arbol es igual a la cantidad de productos \(n\), y que las estructuras auxiliares que usamos dependen de la cantidad de contenedores \(k\), la complejidad espacial total del algoritmo queda dada por:
+
+            \[
+            E(n)=O(n+k)
+            \]
+
+        \subsubsection{Ejemplo de ejecución}
+            Teniendo el siguiente conjunto de productos:
+\begin{verbatim}
+    productos = [(2,10), (5,10), (7,20)]
+    k = 2
+    C = 8
+    a = 5
+\end{verbatim}     
+
+            Asignamos los productos \(0\) y \(1\) al primer contenedor, mientras que el producto \(2\) lo colocamos en el segundo contenedor:
+\begin{verbatim}
+    Contenedor 1 = [0,1]
+    Contenedor 2 = [2]
+\end{verbatim}
+
+            De esta manera, los productos del primer contenedor ocupan \(2+5=7\), mientras que la del segundo contenedor \(7\). Por lo tanto, ambos contenedores tienen \(1\) unidad de espacio libre.
+
+            La penalización total aplicada sobre el espacio no usado es:
+            \[
+            5(1+1)=10
+            \]
+
+            Por otro lado, el valor total obtenido por enviar los productos es:
+            \[
+            10+10+20=40
+            \]
+
+            Finalmente, la ganancia total es de:
+            \[
+            40-10=30
+            \]
+
+            Por lo tanto, el algoritmo retorna:
+            \[
+            (30, [[0,1], [2]])
+            \]
+
+        \subsubsection{Pseudocódigo}
+
+\begin{lstlisting}[style=pseudo]
+main(productos, k, C, a):
+
+    mejor_ganancia = -infinito
+    mejor_solucion = []
+    contenedores = arreglo de k listas vacias
+    ocupacion = arreglo de k ceros
+
+    branch_and_bound(i = 0, productos, contenedores,
+                    ocupacion, ganancia_actual = 0)
+
+    retornar mejor_ganancia, mejor_solucion
+\end{lstlisting}
+
+
+{\small
+\begin{lstlisting}[style=pseudo]
+branch_and_bound(i, productos, contenedores, ocupacion, ganancia_actual):
+
+    if(i == cantidad_productos):
+
+        calcular penalizacion total
+
+        ganancia_final = ganancia_actual - penalizacion
+
+        if(ganancia_final > mejor_ganancia):
+
+            actualizar mejor_ganancia
+            guardar copia de contenedores
+
+        retornar
+
+    cota = ganancia_actual + suma_valores_restantes(i)
+
+    if(cota <= mejor_ganancia):
+
+        podar rama
+        retornar
+
+    cantidad, valor = productos[i]
+    
+    para cada contenedor j:
+    
+    if(ocupacion[j] + cantidad <= C):
+
+            agregar producto i al contenedor j
+
+            ocupacion[j] += cantidad
+
+            branch_and_bound(i + 1, productos, contenedores,
+                            ocupacion, ganancia_actual + valor)
+
+            deshacer cambios
+
+    explorar no enviar el producto actual
+\end{lstlisting}
+
+}
+
+            Para este problema se utilizo la técnica de \textit{Branch \& Bound} para resolverlo. Se partió de una solución de búsqueda exhaustiva tradicional que garantiza encontrar el óptimo pero requiere recorrer todas las configuraciones posibles. Sobre esta idea se construyó una mejora mediante el uso de funciones límite y podas, permitiendo descartar ramas que no pueden superar la mejor solución encontrada.
 
 \subsection{Los centros de atención}
 
