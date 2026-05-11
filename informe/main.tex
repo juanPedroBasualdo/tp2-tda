@@ -312,12 +312,13 @@ function FlujoMaximo(Grafo G, fuente s, sumidero t):
 
         \subsubsection{Ejemplo de ejecución}
             Teniendo el siguiente conjunto de productos:
+
 \begin{verbatim}
     productos = [(2,10), (5,10), (7,20)]
     k = 2
     C = 8
     a = 5
-\end{verbatim}     
+\end{verbatim}
 
             Asignamos los productos \(0\) y \(1\) al primer contenedor, mientras que el producto \(2\) lo colocamos en el segundo contenedor:
 \begin{verbatim}
@@ -410,7 +411,7 @@ branch_and_bound(i, productos, contenedores, ocupacion, ganancia_actual):
 
             Para este problema se utilizo la técnica de \textit{Branch \& Bound} para resolverlo. Se partió de una solución de búsqueda exhaustiva tradicional que garantiza encontrar el óptimo pero requiere recorrer todas las configuraciones posibles. Sobre esta idea se construyó una mejora mediante el uso de funciones límite y podas, permitiendo descartar ramas que no pueden superar la mejor solución encontrada.
 
-\subsection{Los centros de atención}
+    \subsection{Los centros de atención}
 
 \section{Conclusión}
 
