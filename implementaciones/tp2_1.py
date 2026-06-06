@@ -9,6 +9,7 @@ def main(s1: int, s2: int, relaciones: list[tuple[int, int, int]]) -> tuple[set[
     capacidad = {nodo: {} for nodo in nodos}
     for u, v, w in relaciones:
         capacidad[u][v] = capacidad[u].get(v, 0) + w
+        capacidad[v][u] = capacidad[v].get(u, 0) + w
 
     def bfs_camino_aumento(s, t, padres):
         visitados = {s}
@@ -24,9 +25,10 @@ def main(s1: int, s2: int, relaciones: list[tuple[int, int, int]]) -> tuple[set[
                     cola.append(v)
         return False
 
-    # Edmonds-Karp
+    # Algoritmo de Edmonds-Karp
     padres = {}
     while bfs_camino_aumento(s1, s2, padres):
+        # Encontramos el cuello de botella del camino
         flujo_camino = float('inf')
         actual = s2
         while actual != s1:
@@ -34,6 +36,7 @@ def main(s1: int, s2: int, relaciones: list[tuple[int, int, int]]) -> tuple[set[
             flujo_camino = min(flujo_camino, capacidad[previo][actual])
             actual = previo
         
+
         actual = s2
         while actual != s1:
             previo = padres[actual]
@@ -42,6 +45,7 @@ def main(s1: int, s2: int, relaciones: list[tuple[int, int, int]]) -> tuple[set[
             actual = previo
         padres = {}
 
+    # Corte mínimo
     seguidores_s1 = {s1}
     cola_final = deque([s1])
     while cola_final:
@@ -51,6 +55,7 @@ def main(s1: int, s2: int, relaciones: list[tuple[int, int, int]]) -> tuple[set[
                 seguidores_s1.add(v)
                 cola_final.append(v)
     
+    # Los que no quedaron en el grupo de s1, van al de s2
     seguidores_s2 = nodos - seguidores_s1
     
     return seguidores_s1, seguidores_s2

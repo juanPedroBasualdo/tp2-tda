@@ -78,91 +78,113 @@
 
         \subsubsection{Propuesta de solución por red de flujos}
 
-            Dado el grupo de relaciones $R_A$ y un grafo vacío $G$ se crea un vertice por cada miembro $m_i$ presente en $R_A$. Por cada relación $(m_i, m_j)$ se crea una arista dirigida $m_i \rightarrow m_j$ de tal forma que $i<j$, con capacidad $r_{ij}$. La restricción ``$i<j$'' genera que $p_1$ funcione como fuente (nodo $s$, del inglés \textit{source}) y que $p_2$ funcione como sumidero de la red (nodo $t$, \textit{terminal}), y que las aristas fluyan en el sentido $s \rightarrow t$.
+            Para resolver el problema de la separación del Dojo asegurando que la suma de las intensidades de las relaciones rotas sea mínima, modelamos la situación mediante una red de flujo $G = (V, E)$ con capacidades asociadas a las aristas. El objetivo principal consiste en hallar un corte mínimo que separe a los dos profesores rivales ($p_1$ y $p_2$).
 
-             \begin{figure}[ht]
-                \centering
-                \includegraphics[width=0.8\textwidth]{imagenes/red-relacion.png}
-                \caption{Ejemplo de red de flujo de relaciones}\label{red-relaciones}
-             \end{figure}
+            A continuación, se detalla el diseño y la estructura formal de la red de flujo propuesta:
 
-            Bajo la premisa de buscar que los grupos mantengan la máxima relación entre sus miembros, se busca la partición de esta red que minimice la suma de los pesos de las relaciones que se pierden en la separación.
+        \subsubsection{Modelado de Nodos ($V$)}
+            El conjunto de vértices $V$ de la red representa a la totalidad de los integrantes del dojo. Cada profesor o maestro se corresponde con un nodo único dentro del grafo. Adicionalmente, se identifican de manera fija dos nodos especiales que actúan como terminales de la red:
+            
+            \begin{itemize}
+                \item \textbf{Fuente ($s$):} Corresponde al Profesor 1 ($p_1$), quien encabezará el primer subgrupo.
+                \item \textbf{Sumidero ($t$):} Corresponde al Profesor 2 ($p_2$), quien encabezará el segundo subgrupo enfrentado.
+            \end{itemize}
 
-            Para lograrlo, en un primer paso de solución se calcula el flujo máximo de la red a través del Algoritmo de Edmonds-Karp. Por teorema fundamental de flujo se conoce que el valor de flujo máximo es igual a la capacidad de corte mínimo, donde el corte mínimo $(S, T)$ es una partición de los nodos tal que $s \in S$ y $t \in T$. Estos subconjuntos $S$ y $T$ contienen aquellos nodos tal que en $S$ se encuentran todos los nodos \textit{alcanzables} por $s$ en el grafo residual, es decir todos los nodos a los que se pueden llegar usando aristas de capacidad diferente de 0, y en T se encuentran los nodos que cumplen $T=G-\{S\}$.
+        \subsubsection{Modelado de Aristas ($E$) y Capacidades ($c$)}
 
-            \begin{figure}[ht]
-                \centering
-                \includegraphics[width=0.8\textwidth]{imagenes/mincut.png}
-                \caption{Corte mínimo de la red de relaciones}\label{mincut}
-            \end{figure}
+            Dado que las relaciones de afinidad o tensión entre los miembros del dojo son simétricas y recíprocas (es decir, si el profesor $u$ tiene un vínculo de peso $w$ con el profesor $v$, el profesor $v$ posee inherentemente el mismo grado de vínculo con $u$), \textbf{las relaciones deben modelarse de forma bidireccional}. 
 
-            Una vez obtenidos los dos subconjuntos de $G$ se comparan los tamaños de ambos para determinar cual de los dos grupos es el mayor y así poder retornar dicho grupo. Una posible implementación del código solución de esta propuesta puede ser el siguiente:
+
+            Para representar correctamente esta naturaleza no dirigida dentro de una red de flujo (la cual es por definición dirigida), cada relación de peso $w$ provista en el enunciado entre un par de nodos $u$ y $v$ se traduce en \textbf{dos aristas dirigidas simétricas} en el grafo:
+
+            \begin{itemize}
+                \item Una arista dirigida $(u, v)$ con capacidad inicial $c(u, v) = w$.
+                \item Una arista dirigida $(v, u)$ con capacidad inicial $c(v, u) = w$.
+            \end{itemize}
+
+            En caso de existir múltiples especificaciones de relaciones o vínculos superpuestos entre el mismo par de nodos en el conjunto de datos de entrada, las capacidades correspondientes se acumulan de forma aditiva, garantizando la consistencia del modelo:
+            \[
+            c(u, v) = c(v, u) = \sum w_{uv}
+            \]
+
+        \subsubsection{Justificación del enfoque por Corte Mínimo}
+
+            Al aplicar el teorema de \textit{Max-Flow Min-Cut} (Flujo Máximo - Corte Mínimo), sabemos que el valor del flujo máximo que puede transportarse desde la fuente $s$ hasta el sumidero $t$ es exactamente igual a la capacidad del corte mínimo que separa a ambos nodos en dos subconjuntos disjuntos de vértices, $S$ (donde $s \in S$) y $T$ (donde $t \in T$). 
+
+            Las aristas que atraviesan este corte (es decir, aquellas aristas dirigidas que van desde el subconjunto $S$ hacia el subconjunto $T$ y cuyas capacidades residuales quedan completamente saturadas en $0$ al finalizar la ejecución del algoritmo) representan con precisión matemática los vínculos de afinidad que deben disolverse. De este modo, la partición de la red en los componentes disjuntos $S$ y $T$ determina de manera óptima la conformación de los dos nuevos dojos independientes, minimizando estrictamente el costo total de las relaciones rotas. 
+        
+        \subsubsection{Pseudocódigo}
+        
+            Una posible implementación del código solución de esta propuesta puede ser el siguiente:
 
             \begin{lstlisting}[style=pseudo,caption={Pseudocódigo de la solución}]
-function definirNuevoRepresentante(miembros V, relaciones R, profesores P1, P2):
-    G = Grafo new;
-    for(relacion r = ((u, v), i) in R):
-        if(u not in G.V):
-            G.V.add(u);
-        if(v not in G.V):
-            G.V.add(v);
-        G.E.add((u,v), i);
+function definirGruposDojo(miembros V, relaciones R, p1, p2):
+    G = Grafo nuevo
     
-    s, t = P1, P2;
-    G', _ = FlujoMaximo(G, s, t); # Esto genera el grafo residual.
-    
-    miembros_p1 = {s};
+    for cada relacion (u, v, peso) in R:
+        G.agregarVertice(u)
+        G.agregarVertice(v)
+        
+        G.capacidad[u][v] = G.capacidad[u].get(v, 0) + peso
+        G.capacidad[v][u] = G.capacidad[v].get(u, 0) + peso
+
+    s = p1
+    t = p2
+
+    # Obtenemos el grafo residual tras aplicar Edmonds-Karp.
+    G_res = EdmondsKarp(G, s, t)
+
+    grupo_p1 = {s}
     cola = [s]
-    visitados = {s}
 
-    while(cola not empty):
-        u = cola.pop(0)
-        for(vecino v de u en G'):
-            if(v not in visitados && G'.capacidad(u,v) > 0):
-                visitados.add(v)
-                miembros_p1.add(v)
-                cola.add(v)
-    
-    miembros_p2 = G.V.notIn(miembros_p1)
+    while cola no esta vacia:
+        u = cola.desencolar()
+        for cada vecino v de u en G_res:
+            # Solo avanzamos si hay capacidad residual > 0.
+            if v no esta en grupo_p1 y G_res.capacidad[u][v] > 0:
+                grupo_p1.agregar(v)
+                cola.encolar(v)
 
-    if(|miembros_p1| > |miembros_p2|):
-        return P1;
-    else if(|miembros_p1| < |miembros_p2|):
-        return P2;
-    else:
-        return "Ambos profesores se dividen la misma cantidad de alumnos";
+    grupo_p2 = G.V - grupo_p1
+
+    return grupo_p1, grupo_p2
             \end{lstlisting}
 
-            Donde la función \texttt{FlujoMaximo} está determinada por el siguiente Pseudocódigo: \newpage
+            Donde la función \texttt{FlujoMaximo} está determinada por el siguiente Pseudocódigo: 
 
             \begin{lstlisting}[style=pseudo,caption={Pseudocódigo de FlujoMaximo}]
-function FlujoMaximo(Grafo G, fuente s, sumidero t):
-    for each(eje e in G):
-        e.flujo = 0
-    
-    G_res = construirGrafoResidual(G)
+function EdmondsKarp(Grafo G, s, t):
+    # Inicialmente el grafo residual es igual al original.
+    G_res = copiar(G) 
     flujo_total = 0
-    
-    while(existeCamino(G_res, s, t)):
-        P = G_res.shortestPath(s, t)
-        
-        w = P.getBottleneck()
-        
-        G.aplicarAumento(P, w)
-        G_res.actualizarCapacidades(P, w)
-        
-        flujo_total += w
-        
-    return G_res, flujo_total
+
+    camino = BFS_camino_aumento(G_res, s, t)
+
+    while camino existe:
+        flujo_camino = minimo_cuello_botella(camino)
+
+        for cada arista (u, v) en camino:
+            G_res.capacidad[u][v] -= flujo_camino  # Restamos flujo a la arista directa.
+            G_res.capacidad[v][u] += flujo_camino  # Sumamos flujo a la arista inversa.
+
+        flujo_total += flujo_camino
+        camino = BFS_camino_aumento(G_res, s, t)
+
+    return G_res
             \end{lstlisting}
 
         \subsubsection{Análisis de la solución}
 
             A partir del pseudocódigo presentado anterior se puede realizar un análisis en profundidad de la solución propuesta, comenzando por un análisis de uso de recursos de tiempo y espacio, para luego terminar de definir detalles que pueden haber quedado sin analizar.
 
-            \textbf{Análisis de eficiencia espacial:} En cuestiones de uso de espacio, este algoritmo ocupa distintos ordenes de complejidad según como se implemente el grafo a utilizarse. En caso de usar una lista de adyacencia, la complejidad espacial de guardar el grafo de relaciones conllevaría $O(V+E)$, mientras que una matriz de adyacencias utiliza $O(V^2)$. Dado que en este trabajo se implementaron las soluciones algorítmicas en el lenguaje de programación Python, se utilizó la lista de adyacencias\footnote{En este caso sería más adecuado decir ``Diccionario de adyacencias''.} y por lo tanto, en consecuencia a este hecho, la complejidad espacial del algoritmo será igual a $O(V+E)$. Cabe aclararse adicionalmente, que la operatoria de busqueda de flujo máximo requiere $O(V)$ espacio adicional, que por sumarse a la complejidad mencionada anteriormente no afecta al requerimiento espacial final ya que $O(V) \subset O(V+E)$.
+            \textbf{Análisis de eficiencia espacial:} En cuestiones de uso de espacio, este algoritmo ocupa distintos ordenes de complejidad según como se implemente el grafo a utilizarse. En caso de usar una lista de adyacencia, la complejidad espacial de guardar el grafo de relaciones conllevaría $O(V+E)$, mientras que una matriz de adyacencias utiliza $O(V^2)$. Dado que en este trabajo se implementaron las soluciones algorítmicas en el lenguaje de programación Python, se utilizó la lista de adyacencias\footnote{En este caso sería más adecuado decir ``Diccionario de adyacencias''.} y por lo tanto, en consecuencia a este hecho, la complejidad espacial del algoritmo será igual a $O(V+E)$. Pues guardar todos los integrantes requiere $n$ vértices o también $O(V)$ y guardar cada una de las aristas requiere $m$ aristas para una dirección de las relaciones y $m$ aristas para la otra, lo que es lo mismo que $O(2E)$. Esto resulta en la ecuación de complejidad espacial: 
+            \begin{center}
+                $O(V) + O(2E) = O(V+2E) = O(V+E)$
+            \end{center}
+
+            Cabe aclararse adicionalmente, que la operatoria de búsqueda de flujo máximo requiere $O(V)$ espacio adicional, que por sumarse a la complejidad mencionada anteriormente no afecta al requerimiento espacial final ya que $O(V) \subset O(V+E)$.
             
-            \textbf{Análisis de eficiencia temporal:} Respecto al tiempo de ejecución del algoritmo, construir la red de relaciones lleva $O(V+E)$ en ordenes de tiempo e identificar los distintos subconjuntos tambien requieren $O(V+E)$. Dado que se eligió el algoritmo de Edmonds-Karp, este tiene una complejidad de $O(V+E^{2})$ dado que iterando por cada arista ($O(E)$) se busca un camino de aumento ($O(V+E)$) lo que resulta en la complejidad dada. Adicionalmente, contabilizar cuantos miembros contienen cada subconjuntos puede conllevar como mucho una complejidad de $O(V)$. 
+            \textbf{Análisis de eficiencia temporal:} Respecto al tiempo de ejecución del algoritmo, construir la red de relaciones lleva $O(V+E)$ en ordenes de tiempo e identificar los distintos subconjuntos también requieren $O(V+E)$. Dado que se eligió el algoritmo de Edmonds-Karp, este tiene una complejidad de $O(V+E^{2})$ dado que iterando por cada arista ($O(E)$) se busca un camino de aumento ($O(V+E)$) lo que resulta en la complejidad dada. Adicionalmente, contabilizar cuantos miembros contienen cada subconjuntos puede conllevar como mucho una complejidad de $O(V)$. 
             
             Ya que $O(V) \subset O(V+E)$ y $ O(V+E) \subset O(V+E^{2})$, la complejidad resulta:
             \begin{equation}
@@ -172,9 +194,9 @@ function FlujoMaximo(Grafo G, fuente s, sumidero t):
             
             \textbf{Otros detalles de la solución:} En esta subsección del análisis de la propuesta algorítmica se busca responder a las preguntas ``\textit{¿Realmente la propuesta predicirá la división final?}'' y ``\textit{¿Puede una misma instancia tener diferentes soluciones? ¿Que implicación tiene elegir una solución por encima de otra?}''.
             
-            Respecto a la primer pregunta, esta solución no predicirá la división final entre los miembros, sino que esta solución presenta un modelo de estimación simplificada. Esto está dado porque el corte mínimo asume que el sistema busca el estado de menor fricción, es decir la separación del grupo de miembros del dojo que mantenga los vinculos más fuertes. Adicionalmente, dado que es un modelo estimativo, puede ocurrir en la realidad que por fuera de toda estimación dada por esta solución, un alumno elija irse con un profesor en vez del estimado. Esta variación además podría generar un efecto cascada de cambio de profesor de alumnos de relación fuerte con el miembro que eligió al otro profesor.
+            Respecto a la primer pregunta, esta solución no predicirá la división final entre los miembros, sino que esta solución presenta un modelo de estimación simplificada. Esto está dado porque el corte mínimo asume que el sistema busca el estado de menor fricción, es decir la separación del grupo de miembros del dojo que mantenga los vínculos más fuertes. Adicionalmente, dado que es un modelo estimativo, puede ocurrir en la realidad que por fuera de toda estimación dada por esta solución, un alumno elija irse con un profesor en vez del estimado. Esta variación además podría generar un efecto cascada de cambio de profesor de alumnos de relación fuerte con el miembro que eligió al otro profesor.
 
-            Otra característica de esta solución es el hecho de que pueden haber múltiples ópciones de corte en una misma instancia. En una red de flujo, el flujo máximo toma un único valor, pero el corte mínimo de capacidades de dicha red no tiene porque ser uno solo. Tomando el caso donde hay un solo miembro además de ambos profesores y que dicho miembro interactuó una misma cantidad de veces con ambos profesores, ocurre el caso donde la red de flujo tendrá un flujo máximo igual al número de veces que haya interactuado el alumno con los profesores pero el corte que minimiza las capacidades puede realizarse desde la fuente o desde el sumidero, por lo que dará distintas soluciones según como se haya determinado la operación de corte.
+            Otra característica de esta solución es el hecho de que pueden haber múltiples opciones de corte en una misma instancia. En una red de flujo, el flujo máximo toma un único valor, pero el corte mínimo de capacidades de dicha red no tiene porque ser uno solo. Tomando el caso donde hay un solo miembro además de ambos profesores y que dicho miembro interactuó una misma cantidad de veces con ambos profesores, ocurre el caso donde la red de flujo tendrá un flujo máximo igual al número de veces que haya interactuado el alumno con los profesores pero el corte que minimiza las capacidades puede realizarse desde la fuente o desde el sumidero, por lo que dará distintas soluciones según como se haya determinado la operación de corte.
 
             \begin{figure} [ht]
                 \centering
@@ -190,7 +212,7 @@ function FlujoMaximo(Grafo G, fuente s, sumidero t):
             
             $[([1,2],4),([1,3],4),([1,5],1),([2,5],1),([5,7],5),([3,4],4),([5,6],5),$
             
-            $([6,7],5)]$
+            $([6,7],5), ([4,5],1)]$
             
             Con el profesor 1 representado por el número 1 y el profesor 2 representado por el número 7. Se construye una red de flujo a partir de ella, donde los nodos fuente y sumidero son el profesor 1 y el profesor 2 respectivamente, los nodos intermedios son los miembros del dojo y las aristas dirigidas y ponderadas son las veces que interactuaron dos miembros. La instancia elegida para este ejemplo conforma la red mostrada en la Figura 4.
 
@@ -200,30 +222,43 @@ function FlujoMaximo(Grafo G, fuente s, sumidero t):
                 \caption{Red conformada por la instancia dada.}                
             \end{figure}
 
-            A partir de esta red, se busca el corte que minimice las capacidades de las aristas. Como se muestra en la Figura 5, el corte mínimo logra separar la red en dos partes. 
+            En una primera iteración, el algoritmo busca el camino más corto entre $p_1$ y $p_2$ (marcada en violeta) y busca el cuello de botella de dicho camino para poder saturar sus aristas, tanto de una dirección como de otra. En este caso como el cuello de botella es 1, se pasa una unidad de flujo, restando en una dirección y sumando en la otra.
 
             \begin{figure} [ht]
                 \centering
-                \includegraphics[width=0.8\textwidth]{imagenes/ej-1-cut.png}\label{ej1-cut}
+                \includegraphics[width=0.8\textwidth]{imagenes/ej-1-acumulado.png}
+                \label{acumulado1}
+                \caption{Red con 1 unidad de flujo acumulada.}                
+            \end{figure}
+
+            Esta operatoria se repite hasta que no existan más caminos que conecten $p_1$ con $p_2$. Cuando esto ocurra, el flujo máximo de la red será la cantidad de unidades de flujo acumuladas tras la saturación de aristas. 
+
+            \begin{figure} [ht]
+                \centering
+                \includegraphics[width=0.8\textwidth]{imagenes/ej-1-acumulados.png}
+                \label{acumulado2}
+                \caption{Red sin caminos $p_1 \rightarrow p_2$, con 4 unidades de flujo acumulado}
+            \end{figure}
+
+            En este ejemplo se encuentra en una segunda iteración el camino $p_1 \rightarrow 2 \rightarrow 5 \rightarrow p_2$ cuyo cuello de botella es la arista $(2\rightarrow5)$ y su complemento en la otra dirección, con una capacidad de 1. En una tercera operación, se satura la arista $(3\rightarrow6)$ de capacidad 1, correspondiente al camino $p_1\rightarrow3 \rightarrow6 \rightarrow p_2$. Y por último se encuentra el camino más corto $p_1 \rightarrow 3 \rightarrow 4 \rightarrow 5 \rightarrow p_2$ que encuentra el cuello de botella en $(3\rightarrow4)$ de capacidad 1.
+
+            \begin{figure} [ht]
+                \centering
+                \includegraphics[width=0.8\textwidth]{imagenes/ej-1-cut.png}
+                \label{ej1-cut}
                 \caption{Corte mínimo de la instancia.}                
             \end{figure}
-            
-            Es así como a partir del grafo residual de la red pueden conformarse dos grupos de miembros y estos siempre tendrán la máxima relación entre sus pares. Así que tomando el grafo residual de la red se buscan todos los nodos ``alcanzables'' por el profesor 1 y se conforma el primero de los grupos.
+
+            Entonces a partir de estos pasos realizados, el corte mínimo que particiona a la red de forma que se minimice la cantidad de relaciones perdidas tras la separación sera el corte que atraviese aquellas aristas que tras saturarse resultan tener capacidad 0.
 
             \begin{figure} [ht]
                 \centering
-                \includegraphics[width=0.8\textwidth]{imagenes/ej-1-residual.png}\label{ej1-residual}
-                \caption{Grafo residual de la red de flujos de la instancia.}
+                \includegraphics[width=0.8\textwidth]{imagenes/ej-1-resultado.png}
+                \label{ej1-resultado}
+                \caption{Grupos resultado de la instancia}
             \end{figure}
 
-            Por último, usando el grupo recientemente formado se buscan aquellos miembros que no conformen dicho grupo para encontrar el grupo de miembros que seleccionarían al profesor 2. Así formando los dos grupos solución del algoritmo tal como se muestra en la figura 7.
-
-            \begin{figure}
-                \centering
-                \includegraphics[width=0.8\textwidth]{imagenes/ej-1-groupings.png}\label{ej1-groupings}
-                \caption{Grupos solución a la instancia.}
-            \end{figure}
-            \newpage 
+            Una vez logrado saturar las aristas de la red, se pueden obtener ambos grupos separando aquellos nodos que aún son alcanzables por $p_1$, en este ejemplo $\{2, 3, 4\}$, de los que no son alcanzables  $\{5, 6\}$
 
     \subsection{El despacho de los productos}
 
@@ -414,6 +449,12 @@ branch_and_bound(i, productos, contenedores, ocupacion, ganancia_actual):
     \subsection{Los centros de atención}
 
         La realización de esta sección no fue posible por constricciones de tiempo y solapamiento de responsabilidades de los integrantes del grupo. Para admitir una mejor reflexión sobre el ejercicio a realizarse con un mayor tiempo de trabajo se decidió suspender la realización de este ejercicio a una versión posterior (es decir, en el periodo de reentrega) de este informe.
+
+    \section{Correcciones en la segunda versión}
+
+        En la presente reentrega del trabajo práctico se han incorporado diversas modificaciones con el fin de subsanar las observaciones señaladas en la corrección inicial. Principalmente, en el apartado de Redes de Flujo, se reformuló la propuesta de solución de la Sección 2.1.2 para modelar la red considerando la bidireccionalidad intrínseca de las relaciones, lo cual conllevó la consecuente actualización del pseudocódigo para garantizar la viabilidad algorítmica. 
+        
+        Asimismo, se robusteció el análisis teórico profundizando la evaluación de la complejidad espacial de las estructuras de datos utilizadas. Por último, se reelaboró integralmente el ejemplo gráfico de la Sección 2.1.4: se detalló el paso a paso de la saturación de la red mediante la búsqueda de flujo máximo y se corrigió la construcción del grafo residual, reflejando de manera precisa la actualización de capacidades directas e inversas de forma previa a la determinación del corte mínimo.
 
 \section{Conclusión}
 
