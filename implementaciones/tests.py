@@ -11,6 +11,12 @@ class TestDojo(unittest.TestCase):
         dojoEsperado = ({1, 2}, {3, 4})
         self.assertEqual(dojoSolucion, dojoEsperado)
 
+    def test_dojo_reentrega(self):
+        r1 = [(1, 2, 10), (1, 3, 1), (2, 3, 1), (2, 4, 1), (3, 4, 3)]
+        r2 = [(2, 1, 10), (3, 1, 1), (3, 2, 1), (4, 2, 1), (4, 3, 3)]
+
+        self.assertEqual(dojo(1, 4, r1), dojo(1, 4, r2)) 
+
 
 class TestContenedores(unittest.TestCase):
     def test_contenedores_1(self):
