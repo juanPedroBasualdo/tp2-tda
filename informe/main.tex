@@ -46,6 +46,7 @@
     \vfill
     
     % Fecha
+    Versión 2 (Reentrega N° 1) \\
     {\large \today\par}
 \end{titlepage}
 
@@ -448,13 +449,110 @@ branch_and_bound(i, productos, contenedores, ocupacion, ganancia_actual):
 
     \subsection{Los centros de atención}
 
-        La realización de esta sección no fue posible por constricciones de tiempo y solapamiento de responsabilidades de los integrantes del grupo. Para admitir una mejor reflexión sobre el ejercicio a realizarse con un mayor tiempo de trabajo se decidió suspender la realización de este ejercicio a una versión posterior (es decir, en el periodo de reentrega) de este informe.
+        \subsubsection{Reducción polinomial a Set Cover}
+
+        Set Cover es un problema que nos plantea que teniendo un universo de elementos para cubrir y una colección de subconjuntos del mismo, se busca elegir la menor cantidad de subconjuntos posibles para cubrir todos los elementos del universo. Cómo problema de decisión sería: ¿Existe un conjunto de subconjuntos de tamaño menor o igual a $k$ con el que puedo cubrir todos los elementos?
+        
+        La clave para poder transformar este problema en uno equivalente a Set Cover es que instalar un centro equivale a elegir un subconjunto que cubre zonas. Y cada zona es un elemento del universo. Dicho esto, tomamos Set Cover en su versión de decisión: Dado un universo $U$, una colección de subconjuntos $S=\{S_1 ,S_2,...,S_{m}\}$ tal que $Sj \subseteq U$, y un entero $k$, ¿existen a lo sumo $k$ subconjuntos cuya unión cubra todo $U$?
+
+        Queremos demostrar el problema de Centros de Atención (de ahora en más centros), es NP-Hard. Para demostrar que un problema es NP-Hard, tenemos que mostrar que un problema que ya sabemos difícil (NP-Hard) puede transformarse en él, entonces debemos reducir Set Cover al problema de centros de atención, es decir: 
+        \begin{center}
+            $SetCover \le _p Centros de Atencion$
+        \end{center}
+
+        Vemos como es una instancia de Set Cover: 
+        \begin{center}
+            $U=\{u_1,u_2,...,u_{n}\}, S=\{S_1,S_2,...,S_{m}\} $ y un límite: $k$
+        \end{center}
+        
+
+        \textbf{Construcción de la instancia de centros: } A partir de esa instancia armamos una instancia del problema de centros. Por cada elemento $U_i \in U$, creamos una zona $Z_i \in Z$.Por cada subconjunto $S_j$, creamos un centro posible $Fj \in F$. El centro $F_j$ puede atender a la zona $Z_i$ si y solo si: $Ui \in Sj$
+        \begin{itemize}
+            \item A cada centro le ponemos costo: $Cj = 1$
+            \item El presupuesto máximo será: $B = k$
+        \end{itemize}
+        
+        Entonces, elegir centros equivale a elegir subconjuntos.
+
+        \textbf{Demostración de equivalencia:} Tenemos que demostrar el ida y vuelta. Si Set Cover tiene solución Supongamos que existen a lo sumo $k$ subconjuntos que cubren todo $U$. Es decir, existe una selección: $\{Sa_1, Sa_2,..., Sa_{t}\}$ con $t \leq k$, tal que: $Sa_1 \cup Sa_2 \cup ... \cup Sa_t = U$
+
+        Entonces instalamos los centros correspondientes: $\{Fa_1, Fa_2,...,Fa_t\}$ Como esos subconjuntos cubren todos los elementos de $U$, los centros correspondientes pueden atender todas las zonas de $Z$. Además, como cada centro cuesta 1:
+        \begin{center}
+            $Costo Total = t \leq k = B$
+        \end{center}
+    Por lo tanto, la instancia de centros tiene solución. Si la instancia de centros tiene solución Supongamos ahora que existe una selección de centros instalados con costo total menor o igual a $B = k$, y todas las zonas quedan atendidas. Como cada centro cuesta 1, instalar centros con costo total $\leq k$ implica que se instalaron a lo sumo $k$ centros. Tomamos los subconjuntos correspondientes a esos centros.Como todas las zonas son atendidas, eso significa que para cada zona $Z_i$, hay algún centro $F_j$ instalado que puede atenderla. Por construcción, eso ocurre si y solo si: $Ui \in Sj$
+
+
+    Entonces los subconjuntos elegidos cubren todos los elementos de $U$. Por lo tanto, existe un Set Cover de tamaño a lo sumo $k$.
+
+            \textbf{Conclusión:} Como Set Cover se reduce polinomialmente al problema de centros de atención, y Set Cover es NP-Completo, entonces el problema de optimización de centros es NP-Hard. La transformación es polinomial porque solamente creamos: Una zona por cada elemento del universo, Un centro por cada subconjunto, Una relación de atención por cada pertenencia $Ui \in Sj$
+
+        \subsection{Versión de decisión}
+        
+        Para convertirlo en decisión, hay que agregar un presupuesto B y preguntar si existe una solución que no lo supere. Quedaría:
+            \begin{quotation}
+                “Dado un conjunto de posibles centros F, un conjunto de zonas Z, costos de instalación Cj, restricciones de qué centros pueden atender a cada zona, y un presupuesto máximo B, ¿existe una selección de centros a instalar y una asignación de zonas a centros instalados tal que todas las zonas sean atendidas y el costo total de instalación sea menor o igual a B?”
+            \end{quotation}
+
+        Para demostrar que pertenece a NP, necesitamos ver que, si alguien nos da una solución candidata, podemos verificarla en tiempo polinomial. El certificado podría ser:
+
+\begin{lstlisting}[style=pseudo]
+Certificador (centros, zonas, B, evidencia):
+	Si en la evidencia hay algun centro o zona que no este en centros o zonas de la instancia:
+		Devuelve Falso
+	Si en la evidencia la suma de los costos es mayor a B
+		Devuelve falso
+	Si en la evidencia no estan todas las zonas asignadas a algun centro:
+		Devuelve Falso
+	Si en la evidencia no estan todos los centros con zonas asignadas instalados:
+		Devuelve falso
+	Devuelve verdadero
+\end{lstlisting}
+
+            De esta forma, verificamos que están todos los centros son de la instancia del problema, que cubren todas las zonas, que están instalados y que los costos no superan a B. Todo eso se puede verificar recorriendo zonas, centros y asignaciones en tiempo polinomial. Por lo tanto, la versión de decisión pertenece a NP.
+
+            Para demostrar que un problema es NP-Completo necesitamos probar dos cosas:
+            \begin{enumerate}
+                \item Que pertenece a NP.
+                \item Que es NP-Hard.
+            \end{enumerate}
+
+            Ya vimos este problema que pertenece a NP-Hard ya que: 
+            \begin{center}
+                $Set Cover \leq_p Centros de Atencion$
+            \end{center}
+    
+            Como Set Cover es NP-Completo, eso demuestra que Centros de Atención es NP-Hard.
+            Entonces:
+            \begin{center}
+            $Centros de Atencion \in NP \wedge Centros de Atencion \in NP-H$
+
+            $Centros de Atencion \in NP-C$
+            \end{center}
+
+        \subsubsection{Otras cuestiones respecto a las clases de complejidad}
+
+            Si alguien demuestra tener un algoritmo polinomial que resuelve la versión de optimización, entonces también podríamos resolver la versión de decisión en tiempo polinomial. Porque para cualquier algoritmo que pueda resolver un problema de optimización en tiempo polinomial, la verificación de este también se puede hacer en tiempo polinomial.
+
+            Nos dicen:
+            \begin{center}
+                $X \leq_p Centros de Atencion$
+            \end{center}
+            
+Eso significa que X es a lo sumo tan difícil como Centros de Atención. Como Centros de Atención es NP-Completo, podemos decir que X se puede resolver usando una transformación polinomial hacia un problema NP-Completo. Sin embargo, eso solo no alcanza para decir que X es NP-Hard ni NP-Completo.
+Para demostrar que X es NP-Hard necesitaríamos lo contrario, es decir:
+
+$Centros de Atencion \leq_p X$
+o que algún problema NP-Completo se reduzca a X.
+Lo que sí podemos decir es: Si X es un problema de decisión, entonces $X \in NP$, porque se reduce a un problema que está en NP. No podemos concluir que X sea NP-Completo. No podemos concluir que X sea NP-Hard. Solo sabemos que X no es más difícil que Centros de Atención bajo reducciones polinomiales. Solo sabemos que X es como mucho tan difícil como Centros; no necesariamente NP-Hard ni NP-Completo.
 
     \section{Correcciones en la segunda versión}
 
         En la presente reentrega del trabajo práctico se han incorporado diversas modificaciones con el fin de subsanar las observaciones señaladas en la corrección inicial. Principalmente, en el apartado de Redes de Flujo, se reformuló la propuesta de solución de la Sección 2.1.2 para modelar la red considerando la bidireccionalidad intrínseca de las relaciones, lo cual conllevó la consecuente actualización del pseudocódigo para garantizar la viabilidad algorítmica. 
         
         Asimismo, se robusteció el análisis teórico profundizando la evaluación de la complejidad espacial de las estructuras de datos utilizadas. Por último, se reelaboró integralmente el ejemplo gráfico de la Sección 2.1.4: se detalló el paso a paso de la saturación de la red mediante la búsqueda de flujo máximo y se corrigió la construcción del grafo residual, reflejando de manera precisa la actualización de capacidades directas e inversas de forma previa a la determinación del corte mínimo.
+
+        Respecto a la tercer sección, se realizó al completo, retirando el aviso de que se realizaría en esta versión del informe.
 
 \section{Conclusión}
 
